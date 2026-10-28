@@ -89,7 +89,7 @@ class App {
     // Global render & update loop
     const masterLoop = () => {
       requestAnimationFrame(masterLoop);
-      if (this.engine.state === 'PLAYING') {
+      if (this.engine.state === 'PLAYING' || this.engine.state === 'COUNTDOWN') {
         this.engine.update();
         this._updateHudProgress();
       }
@@ -108,12 +108,47 @@ class App {
     };
 
     this.input.onPausePress = () => {
-      if (this.engine.state === 'PLAYING') {
+      if (this.engine.state === 'PLAYING' || this.engine.state === 'COUNTDOWN') {
         this.pauseGame();
       } else if (this.engine.state === 'PAUSED') {
         this.resumeGame();
       }
     };
+
+    // Direct Canvas Highway Click / Touch Support
+    const getLaneFromEvent = (clientX) => {
+      const rect = this.canvas.getBoundingClientRect();
+      const highwayWidth = Math.min(560, rect.width * 0.94);
+      const highwayLeft = (rect.width - highwayWidth) / 2;
+      const x = clientX - rect.left - highwayLeft;
+      if (x >= 0 && x <= highwayWidth) {
+        return Math.min(3, Math.max(0, Math.floor((x / highwayWidth) * 4)));
+      }
+      return -1;
+    };
+
+    this.canvas.addEventListener('mousedown', (e) => {
+      const lane = getLaneFromEvent(e.clientX);
+      if (lane !== -1) this.input.triggerPress(lane);
+    });
+
+    this.canvas.addEventListener('mouseup', () => {
+      for (let l = 0; l < 4; l++) this.input.triggerRelease(l);
+    });
+
+    this.canvas.addEventListener('touchstart', (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const lane = getLaneFromEvent(e.changedTouches[i].clientX);
+        if (lane !== -1) this.input.triggerPress(lane);
+      }
+    }, { passive: true });
+
+    this.canvas.addEventListener('touchend', (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const lane = getLaneFromEvent(e.changedTouches[i].clientX);
+        if (lane !== -1) this.input.triggerRelease(lane);
+      }
+    }, { passive: true });
 
     // Mobile touch pads setup
     const touchPads = document.querySelectorAll('.mobile-touch-pad');

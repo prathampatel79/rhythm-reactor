@@ -19,15 +19,13 @@ class HighwayVisualizer {
     this.laneFlashes = [0, 0, 0, 0]; // 0.0 to 1.0 glow fade
     this.laneHeld = [false, false, false, false];
 
-    // Theme colors
+    // Theme colors for lanes
     this.laneColors = [
-      '#00f0ff', // Lane 0: Cyan
-      '#ff007f', // Lane 1: Magenta
-      '#ffaa00', // Lane 2: Gold/Orange
-      '#39ff14'  // Lane 3: Neon Green
+      '#00f0ff', // Lane 0 (D): Cyan
+      '#ff007f', // Lane 1 (F): Magenta
+      '#ffaa00', // Lane 2 (J): Gold/Amber
+      '#39ff14'  // Lane 3 (K): Neon Green
     ];
-
-    this.hitLineYRatio = 0.82; // Hitline at 82% of highway height
 
     // Animation loop reference
     this.animationId = null;
@@ -82,9 +80,9 @@ class HighwayVisualizer {
     // Spawn floating judgement text
     this.activeJudgements.push({
       text: judgement,
-      subText: judgement === 'MISS' ? '' : (hitOffset > 0.015 ? 'LATE' : (hitOffset < -0.015 ? 'EARLY' : 'EXACT')),
-      color: judgement === 'PERFECT' ? '#ffe600' : (judgement === 'GOOD' ? '#00f0ff' : '#ff0055'),
-      scale: 1.3,
+      subText: judgement === 'MISS' ? '' : (hitOffset > 0.018 ? 'LATE' : (hitOffset < -0.018 ? 'EARLY' : 'EXACT')),
+      color: judgement === 'PERFECT' ? '#ffe600' : (judgement === 'GOOD' ? '#00f0ff' : '#ff003c'),
+      scale: 1.35,
       alpha: 1.0,
       y: 0,
       lane
@@ -118,12 +116,14 @@ class HighwayVisualizer {
     const w = this.width;
     const h = this.height;
 
-    // Highway Geometry
-    // Center highway, max width 560px on desktop, or 92% on mobile
+    // Highway Geometry:
+    // Centered highway, width up to 560px on desktop, or 94% on mobile
     const highwayWidth = Math.min(560, w * 0.94);
     const highwayLeft = (w - highwayWidth) / 2;
     const laneWidth = highwayWidth / 4;
-    const hitLineY = h * this.hitLineYRatio;
+
+    // Hitline placed 90px from bottom for clean spacing and visibility
+    const hitLineY = Math.max(120, h - 90);
 
     // Clear background
     ctx.clearRect(0, 0, w, h);
@@ -167,7 +167,7 @@ class HighwayVisualizer {
 
     // Deep Dark Space Vignette
     const bgGrad = ctx.createRadialGradient(w / 2, h * 0.4, 40, w / 2, h * 0.4, Math.max(w, h));
-    bgGrad.addColorStop(0, '#0c1122');
+    bgGrad.addColorStop(0, '#0d1326');
     bgGrad.addColorStop(0.6, songTheme.bgDark);
     bgGrad.addColorStop(1, '#020306');
 
@@ -180,8 +180,8 @@ class HighwayVisualizer {
     if (pulse > 0.05) {
       ctx.save();
       const pulseGrad = ctx.createRadialGradient(w / 2, h * 0.45, 10, w / 2, h * 0.45, w * 0.6);
-      pulseGrad.addColorStop(0, songTheme.primary + Math.round(pulse * 40).toString(16).padStart(2, '0'));
-      pulseGrad.addColorStop(0.7, songTheme.secondary + Math.round(pulse * 20).toString(16).padStart(2, '0'));
+      pulseGrad.addColorStop(0, songTheme.primary + Math.round(pulse * 35).toString(16).padStart(2, '0'));
+      pulseGrad.addColorStop(0.7, songTheme.secondary + Math.round(pulse * 18).toString(16).padStart(2, '0'));
       pulseGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = pulseGrad;
       ctx.fillRect(0, 0, w, h);
@@ -192,9 +192,9 @@ class HighwayVisualizer {
     ctx.save();
     ctx.strokeStyle = songTheme.gridColor || 'rgba(0, 240, 255, 0.12)';
     ctx.lineWidth = 1;
-    const horizonY = h * 0.25;
+    const horizonY = h * 0.22;
 
-    // Horizon glowing line
+    // Horizon line
     ctx.beginPath();
     ctx.moveTo(0, horizonY);
     ctx.lineTo(w, horizonY);
@@ -214,31 +214,59 @@ class HighwayVisualizer {
   }
 
   _drawHighwayLanes(ctx, left, width, laneW, h, hitLineY, pulse) {
-    // Highway backdrop shadow
     ctx.save();
-    ctx.fillStyle = 'rgba(6, 9, 20, 0.88)';
+
+    // Sleek highway background with subtle gradient
+    const highwayGrad = ctx.createLinearGradient(0, 0, 0, h);
+    highwayGrad.addColorStop(0, 'rgba(4, 7, 18, 0.94)');
+    highwayGrad.addColorStop(0.7, 'rgba(8, 13, 28, 0.96)');
+    highwayGrad.addColorStop(1, 'rgba(4, 7, 18, 0.98)');
+    ctx.fillStyle = highwayGrad;
     ctx.fillRect(left, 0, width, h);
 
-    // Lane dividing lines
-    for (let i = 0; i <= 4; i++) {
+    // Glowing outer guard rails
+    ctx.strokeStyle = '#00f0ff';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = '#00f0ff';
+    ctx.shadowBlur = this.reducedEffects ? 0 : 10;
+
+    // Left rail
+    ctx.beginPath();
+    ctx.moveTo(left, 0);
+    ctx.lineTo(left, h);
+    ctx.stroke();
+
+    // Right rail
+    ctx.strokeStyle = '#39ff14';
+    ctx.shadowColor = '#39ff14';
+    ctx.beginPath();
+    ctx.moveTo(left + width, 0);
+    ctx.lineTo(left + width, h);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Interior lane divider lines (dashed futuristic track)
+    for (let i = 1; i < 4; i++) {
       const lx = left + i * laneW;
-      ctx.strokeStyle = (i === 0 || i === 4) ? 'rgba(0, 240, 255, 0.6)' : 'rgba(255, 255, 255, 0.15)';
-      ctx.lineWidth = (i === 0 || i === 4) ? 2.5 : 1.2;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([8, 6]);
       ctx.beginPath();
       ctx.moveTo(lx, 0);
       ctx.lineTo(lx, h);
       ctx.stroke();
     }
+    ctx.setLineDash([]);
 
-    // Lane Flash / Held Beam
+    // Lane Flash / Held Beam shooting up the lane
     for (let l = 0; l < 4; l++) {
-      const flash = Math.max(this.laneFlashes[l], this.laneHeld[l] ? 0.7 : 0);
+      const flash = Math.max(this.laneFlashes[l], this.laneHeld[l] ? 0.75 : 0);
       if (flash > 0.02) {
         const lx = left + l * laneW;
         const beamGrad = ctx.createLinearGradient(0, hitLineY, 0, 0);
         const col = this.laneColors[l];
-        beamGrad.addColorStop(0, col + Math.round(flash * 100).toString(16).padStart(2, '0'));
-        beamGrad.addColorStop(0.5, col + Math.round(flash * 40).toString(16).padStart(2, '0'));
+        beamGrad.addColorStop(0, col + Math.round(flash * 120).toString(16).padStart(2, '0'));
+        beamGrad.addColorStop(0.6, col + Math.round(flash * 35).toString(16).padStart(2, '0'));
         beamGrad.addColorStop(1, 'transparent');
 
         ctx.fillStyle = beamGrad;
@@ -254,9 +282,16 @@ class HighwayVisualizer {
     const pixelsPerSec = hitLineY / approachTime;
 
     const notes = this.engine.chart.notes;
-    const noteH = 22; // Note bar height
+    const noteH = 26; // High visibility note tile height
 
     ctx.save();
+    // Clip notes strictly within highway and above the hitline bottom
+    ctx.beginPath();
+    ctx.rect(left - 4, 0, (laneW * 4) + 8, hitLineY + 18);
+    ctx.clip();
+
+    // Group notes by targetTime to draw connecting chord bars
+    const activeNotesByTime = new Map();
 
     for (let i = 0; i < notes.length; i++) {
       const note = notes[i];
@@ -264,7 +299,7 @@ class HighwayVisualizer {
 
       const timeUntilHit = note.targetTime - currentSongTime;
 
-      // Only draw notes currently on screen
+      // Draw all notes currently approaching or momentarily passing
       if (timeUntilHit > approachTime + 0.1 || timeUntilHit < -0.15) {
         continue;
       }
@@ -273,32 +308,71 @@ class HighwayVisualizer {
       const noteX = left + note.lane * laneW + 4;
       const noteWidth = laneW - 8;
 
-      const color = note.color;
-
-      // Note body
-      ctx.fillStyle = color;
-      ctx.shadowColor = this.reducedEffects ? 'transparent' : color;
-      ctx.shadowBlur = this.reducedEffects ? 0 : 12;
-
-      // Rounded bar
-      const radius = 6;
-      ctx.beginPath();
-      ctx.roundRect(noteX, noteY - (noteH / 2), noteWidth, noteH, radius);
-      ctx.fill();
-
-      // Inner glossy shine
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-      ctx.beginPath();
-      ctx.roundRect(noteX + 3, noteY - (noteH / 2) + 2, noteWidth - 6, (noteH / 2) - 2, 3);
-      ctx.fill();
-
-      // If chord, render bright pulsing ring/border
-      if (note.isChord) {
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
+      const tKey = note.targetTime.toFixed(3);
+      if (!activeNotesByTime.has(tKey)) {
+        activeNotesByTime.set(tKey, []);
       }
+      activeNotesByTime.get(tKey).push({ note, noteX, noteY, noteWidth });
     }
+
+    // 1. Draw horizontal chord laser beams
+    activeNotesByTime.forEach((chordList) => {
+      if (chordList.length > 1) {
+        const sorted = chordList.sort((a, b) => a.noteX - b.noteX);
+        const startX = sorted[0].noteX + sorted[0].noteWidth / 2;
+        const endX = sorted[sorted.length - 1].noteX + sorted[sorted.length - 1].noteWidth / 2;
+        const y = sorted[0].noteY;
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.lineWidth = 4;
+        ctx.shadowColor = '#ffffff';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(endX, y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+    });
+
+    // 2. Draw each individual glowing note tile
+    activeNotesByTime.forEach((chordList) => {
+      chordList.forEach(({ note, noteX, noteY, noteWidth }) => {
+        const color = note.color;
+
+        // Glowing trailing tail above note
+        const trailLength = Math.min(32, pixelsPerSec * 0.1);
+        if (trailLength > 4) {
+          const trailGrad = ctx.createLinearGradient(0, noteY - trailLength, 0, noteY);
+          trailGrad.addColorStop(0, 'transparent');
+          trailGrad.addColorStop(1, color + '55');
+          ctx.fillStyle = trailGrad;
+          ctx.fillRect(noteX + 4, noteY - trailLength, noteWidth - 8, trailLength);
+        }
+
+        // Note Body
+        ctx.fillStyle = color;
+        ctx.shadowColor = this.reducedEffects ? 'transparent' : color;
+        ctx.shadowBlur = this.reducedEffects ? 0 : 14;
+
+        ctx.beginPath();
+        ctx.roundRect(noteX, noteY - (noteH / 2), noteWidth, noteH, 7);
+        ctx.fill();
+
+        // Inner white shine streak
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+        ctx.beginPath();
+        ctx.roundRect(noteX + 4, noteY - (noteH / 2) + 2, noteWidth - 8, 4, 2);
+        ctx.fill();
+
+        // White chord border
+        if (note.isChord) {
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+        }
+      });
+    });
 
     ctx.restore();
   }
@@ -306,10 +380,10 @@ class HighwayVisualizer {
   _drawReceptors(ctx, left, laneW, hitLineY, pulse) {
     ctx.save();
 
-    // Hitline neon beam
+    // Hitline neon beam across highway
     ctx.strokeStyle = '#00f0ff';
     ctx.shadowColor = this.reducedEffects ? 'transparent' : '#00f0ff';
-    ctx.shadowBlur = this.reducedEffects ? 0 : 10;
+    ctx.shadowBlur = this.reducedEffects ? 0 : 12;
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(left, hitLineY);
@@ -321,17 +395,18 @@ class HighwayVisualizer {
     for (let l = 0; l < 4; l++) {
       const rx = left + l * laneW + 4;
       const rw = laneW - 8;
-      const rh = 34;
+      const rh = 40;
       const ry = hitLineY - rh / 2;
 
-      const isPressed = this.laneHeld[l] || this.laneFlashes[l] > 0.2;
+      const isPressed = this.laneHeld[l] || this.laneFlashes[l] > 0.15;
       const col = this.laneColors[l];
 
-      ctx.fillStyle = isPressed ? col : 'rgba(15, 25, 45, 0.85)';
+      // Receptor background
+      ctx.fillStyle = isPressed ? col : 'rgba(12, 18, 36, 0.9)';
       ctx.strokeStyle = isPressed ? '#ffffff' : col;
-      ctx.lineWidth = isPressed ? 2.5 : 1.5;
+      ctx.lineWidth = isPressed ? 3 : 2;
       ctx.shadowColor = isPressed ? col : 'transparent';
-      ctx.shadowBlur = isPressed ? 14 : 0;
+      ctx.shadowBlur = isPressed ? 18 : 0;
 
       ctx.beginPath();
       ctx.roundRect(rx, ry, rw, rh, 8);
@@ -340,7 +415,7 @@ class HighwayVisualizer {
 
       // Key letter
       ctx.fillStyle = isPressed ? '#000000' : '#ffffff';
-      ctx.font = 'bold 16px monospace';
+      ctx.font = '900 18px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(keyLabels[l], rx + rw / 2, ry + rh / 2);
@@ -401,10 +476,10 @@ class HighwayVisualizer {
       ctx.textBaseline = 'middle';
 
       // Primary Judgement text
-      ctx.font = `900 ${Math.round(28 * j.scale)}px sans-serif`;
+      ctx.font = `900 ${Math.round(30 * j.scale)}px sans-serif`;
       ctx.fillStyle = j.color;
       ctx.shadowColor = this.reducedEffects ? 'transparent' : j.color;
-      ctx.shadowBlur = this.reducedEffects ? 0 : 14;
+      ctx.shadowBlur = this.reducedEffects ? 0 : 16;
       ctx.fillText(j.text, centerX, hitLineY - 80 + j.y);
 
       // Subtext (LATE / EARLY)

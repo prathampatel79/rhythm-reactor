@@ -1,7 +1,8 @@
 /**
  * Rhythm Reactor - Deterministic Chart Builder
  * Generates note charts directly from the music's rhythmic grid and stem events.
- * Provides distinct, tailored charts for Easy, Normal, and Hard difficulties.
+ * Provides distinct, tailored charts for Easy, Normal, and Hard difficulties,
+ * ensuring notes are present and engaging right from beat 0 / intro.
  */
 
 class ChartBuilder {
@@ -19,8 +20,8 @@ class ChartBuilder {
     // Timing Windows (seconds)
     const timingWindows = {
       easy: {
-        perfect: 0.070, // ±70ms
-        good: 0.140,    // ±140ms
+        perfect: 0.075, // ±75ms
+        good: 0.145,    // ±145ms
         miss: 0.220     // hit window limit
       },
       normal: {
@@ -40,38 +41,51 @@ class ChartBuilder {
 
     // Filter and pick notes according to difficulty rules
     if (diff === 'easy') {
-      // EASY: Only strong downbeats, kicks, and prominent snares.
-      // Minimum gap between notes: 1.0 beat (or 0.5 in climax)
+      // EASY: Clear, readable rhythm on primary beats (every 1-2 beats).
+      // Uses kicks, snares, downbeat chord stabs, and key melodic accents.
       let lastBeat = -999;
+
       for (const ev of song.events) {
-        // Only accept kicks and snares on whole beats or half beats
+        // Accept on integer beats or half beats
         const isWholeBeat = Math.abs(ev.beat - Math.round(ev.beat)) < 0.01;
-        const isSignificantDrum = (ev.type === 'kick' || ev.type === 'snare');
+        const isHalfBeat = Math.abs((ev.beat * 2) - Math.round(ev.beat * 2)) < 0.01;
 
-        if (isSignificantDrum && isWholeBeat) {
-          if (ev.beat - lastBeat >= 1.0) {
-            // Lane mapping: kicks go to lane 0 or 1, snares to 2 or 3
-            let lane = ev.type === 'kick' ? 0 : 2;
-            if (Math.round(ev.beat) % 2 === 1) lane += 1;
+        let shouldInclude = false;
+        let lane = 0;
 
-            rawNotes.push({
-              beat: ev.beat,
-              lane: lane % 4,
-              type: ev.type
-            });
-            lastBeat = ev.beat;
-          }
+        if (ev.type === 'kick') {
+          lane = (Math.round(ev.beat) % 2 === 0) ? 0 : 1;
+          shouldInclude = isWholeBeat;
+        } else if (ev.type === 'snare' || ev.type === 'clap') {
+          lane = (Math.round(ev.beat) % 2 === 0) ? 2 : 3;
+          shouldInclude = isWholeBeat;
+        } else if ((ev.type === 'chord' || ev.type === 'arp') && isWholeBeat) {
+          // Introductory chords or arpeggios provide notes before drums enter
+          lane = (Math.round(ev.beat) % 4);
+          shouldInclude = true;
+        } else if (ev.type === 'lead' && isWholeBeat) {
+          lane = ev.lane !== undefined ? ev.lane : 1;
+          shouldInclude = true;
+        }
+
+        if (shouldInclude && (ev.beat - lastBeat >= 1.0)) {
+          rawNotes.push({
+            beat: ev.beat,
+            lane: lane % 4,
+            type: ev.type
+          });
+          lastBeat = ev.beat;
         }
       }
     } else if (diff === 'normal') {
-      // NORMAL: Kicks, snares, claps, and key melodic accents.
-      // Downbeats, offbeats (eighth notes), occasional alternating patterns.
+      // NORMAL: Rhythmic density with eighth notes, offbeats, and alternating lanes.
+      // Covers kicks, snares, claps, bass pulses, and lead melodies.
       let lastBeatPerLane = [-999, -999, -999, -999];
       let lastGlobalBeat = -999;
 
       for (const ev of song.events) {
-        const isQuarterOrEighth = Math.abs((ev.beat * 2) - Math.round(ev.beat * 2)) < 0.01;
-        if (!isQuarterOrEighth) continue;
+        const isEighth = Math.abs((ev.beat * 2) - Math.round(ev.beat * 2)) < 0.02;
+        if (!isEighth) continue;
 
         let shouldInclude = false;
         let lane = ev.lane !== undefined ? ev.lane : 0;
@@ -82,8 +96,15 @@ class ChartBuilder {
         } else if (ev.type === 'snare' || ev.type === 'clap') {
           lane = (Math.round(ev.beat) % 2 === 0) ? 2 : 3;
           shouldInclude = true;
-        } else if (ev.type === 'lead' && (ev.beat - lastGlobalBeat >= 0.5)) {
-          lane = (ev.lane !== undefined) ? ev.lane : 2;
+        } else if (ev.type === 'chord' && (ev.beat - lastGlobalBeat >= 1.0)) {
+          // Chord stabs on downbeats
+          lane = (Math.round(ev.beat / 2) % 2 === 0) ? 0 : 3;
+          shouldInclude = true;
+        } else if ((ev.type === 'lead' || ev.type === 'arp') && (ev.beat - lastGlobalBeat >= 0.5)) {
+          lane = ev.lane !== undefined ? ev.lane % 4 : 2;
+          shouldInclude = true;
+        } else if (ev.type === 'bass' && (ev.beat - lastGlobalBeat >= 1.0)) {
+          lane = 1;
           shouldInclude = true;
         }
 
@@ -102,21 +123,21 @@ class ChartBuilder {
       let lastBeatPerLane = [-999, -999, -999, -999];
 
       for (const ev of song.events) {
-        let lane = (ev.lane !== undefined) ? ev.lane : 0;
+        let lane = (ev.lane !== undefined) ? ev.lane % 4 : 0;
         let shouldInclude = false;
 
         if (ev.type === 'kick') {
-          lane = (ev.lane !== undefined) ? ev.lane : 0;
+          lane = (ev.lane !== undefined) ? ev.lane % 4 : 0;
           shouldInclude = true;
         } else if (ev.type === 'snare' || ev.type === 'clap') {
-          lane = (ev.lane !== undefined) ? ev.lane : 2;
+          lane = (ev.lane !== undefined) ? ev.lane % 4 : 2;
           shouldInclude = true;
-        } else if (ev.type === 'lead' || ev.type === 'arp') {
-          lane = ev.lane % 4;
+        } else if (ev.type === 'lead' || ev.type === 'arp' || ev.type === 'bass') {
+          lane = lane % 4;
           shouldInclude = true;
         } else if (ev.type === 'chord') {
           // In Hard, chords create 2 simultaneous notes!
-          const chordLanes = [(ev.lane) % 4, (ev.lane + 2) % 4];
+          const chordLanes = [(lane) % 4, (lane + 2) % 4];
           chordLanes.forEach(l => {
             if (ev.beat - lastBeatPerLane[l] >= 0.2) {
               rawNotes.push({ beat: ev.beat, lane: l, type: 'chord' });
@@ -154,14 +175,14 @@ class ChartBuilder {
       }
     }
 
-    // Check simultaneous notes (chords)
+    // Identify simultaneous chords
     const beatCounts = new Map();
     for (const n of uniqueNotes) {
       const bKey = n.beat.toFixed(3);
       beatCounts.set(bKey, (beatCounts.get(bKey) || 0) + 1);
     }
 
-    // Colors per lane:
+    // Lane Colors:
     // Lane 0 (D): Cyan (#00f0ff)
     // Lane 1 (F): Magenta (#ff007f)
     // Lane 2 (J): Orange / Gold (#ffaa00)

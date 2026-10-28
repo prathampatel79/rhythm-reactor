@@ -232,7 +232,7 @@
   100% { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
 }
 
-/* MOBILE ON-SCREEN TOUCH CONTROLS */
+/* MOBILE ON-SCREEN TOUCH CONTROLS (Zero-blur transparent hit zones) */
 .mobile-touch-bar {
   position: absolute;
   bottom: 0;
@@ -240,44 +240,42 @@
   transform: translateX(-50%);
   width: 100%;
   max-width: 560px;
-  height: 80px;
+  height: 90px;
   display: flex;
-  gap: 8px;
-  padding: 8px 12px 14px 12px;
+  gap: 0;
+  padding: 0;
   z-index: 80;
+  pointer-events: auto;
 }
 
 .mobile-touch-pad {
   flex: 1;
   height: 100%;
-  background: rgba(18, 26, 48, 0.7);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  color: #ffffff;
-  font-size: 1.5rem;
-  font-weight: 900;
-  font-family: monospace;
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(8px);
   touch-action: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.1s ease;
 }
 
-.mobile-touch-pad.lane-0 { border-color: rgba(0, 240, 255, 0.5); }
-.mobile-touch-pad.lane-1 { border-color: rgba(255, 0, 127, 0.5); }
-.mobile-touch-pad.lane-2 { border-color: rgba(255, 170, 0, 0.5); }
-.mobile-touch-pad.lane-3 { border-color: rgba(57, 255, 20, 0.5); }
-
-.mobile-touch-pad:active, .mobile-touch-pad.active {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(0.96);
+.mobile-touch-pad.lane-0:active, .mobile-touch-pad.lane-0.active {
+  background: rgba(0, 240, 255, 0.2);
 }
-
-.mobile-touch-pad.lane-0:active { background: rgba(0, 240, 255, 0.3); box-shadow: 0 0 15px #00f0ff; }
-.mobile-touch-pad.lane-1:active { background: rgba(255, 0, 127, 0.3); box-shadow: 0 0 15px #ff007f; }
-.mobile-touch-pad.lane-2:active { background: rgba(255, 170, 0, 0.3); box-shadow: 0 0 15px #ffaa00; }
-.mobile-touch-pad.lane-3:active { background: rgba(57, 255, 20, 0.3); box-shadow: 0 0 15px #39ff14; }
+.mobile-touch-pad.lane-1:active, .mobile-touch-pad.lane-1.active {
+  background: rgba(255, 0, 127, 0.2);
+}
+.mobile-touch-pad.lane-2:active, .mobile-touch-pad.lane-2.active {
+  background: rgba(255, 170, 0, 0.2);
+}
+.mobile-touch-pad.lane-3:active, .mobile-touch-pad.lane-3.active {
+  background: rgba(57, 255, 20, 0.2);
+}
 
 /* IN-GAME PAUSE MODAL */
 .pause-modal-box {

@@ -29,10 +29,8 @@ class GameEngine {
     this.accuracy = 100.0;
     this.multiplier = 1;
 
-    // Countdown
-    this.countdownTimer = null;
-    this.countdownCount = 3;
-    this.leadInSeconds = 3.0; // 3 second lead-in before beat 0
+    // Countdown parameters
+    this.leadInSeconds = 3.0; // 3-second lead-in countdown before beat 0
 
     // Timing windows reference
     this.timingWindows = {
@@ -42,9 +40,8 @@ class GameEngine {
     };
 
     // Note scroll settings
-    // Approach time (speed): how many seconds a note takes to travel from spawn to hitline
-    this.scrollSpeed = 1.0; // speed multiplier (0.8x to 1.5x)
-    this.approachTime = 1.6; // seconds visible on highway
+    this.scrollSpeed = 1.0;
+    this.approachTime = 1.6; // seconds a note is visible approaching hit line
 
     // Callbacks
     this.onStateChange = null;
@@ -83,48 +80,73 @@ class GameEngine {
 
     this._notifyScoreUpdate();
 
-    // Start Countdown sequence
+    // Start Song Player with 3-second lead-in delay
+    // This allows notes to start falling from the top during the 3-2-1 countdown!
     this.state = 'COUNTDOWN';
     if (this.onStateChange) this.onStateChange(this.state);
 
+    await this.player.playSong(this.song, this.leadInSeconds);
+
+    // Run audio-synchronized countdown
     await this._runCountdown();
+
+    this.state = 'PLAYING';
+    if (this.onStateChange) this.onStateChange(this.state);
   }
 
   _runCountdown() {
     return new Promise(resolve => {
-      this.countdownCount = 3;
-      if (this.onCountdownTick) this.onCountdownTick('3');
-      this.synth.playCountdownBeep(false);
+      let lastBeep = -99;
 
-      this.countdownTimer = setInterval(() => {
-        this.countdownCount--;
-
-        if (this.countdownCount === 2) {
-          if (this.onCountdownTick) this.onCountdownTick('2');
-          this.synth.playCountdownBeep(false);
-        } else if (this.countdownCount === 1) {
-          if (this.onCountdownTick) this.onCountdownTick('1');
-          this.synth.playCountdownBeep(false);
-        } else if (this.countdownCount === 0) {
-          if (this.onCountdownTick) this.onCountdownTick('GO!');
-          this.synth.playCountdownBeep(true);
-        } else {
-          clearInterval(this.countdownTimer);
-          this.countdownTimer = null;
-          if (this.onCountdownTick) this.onCountdownTick('');
-
-          // Start actual music playback
-          this.state = 'PLAYING';
-          if (this.onStateChange) this.onStateChange(this.state);
-          this.player.playSong(this.song, 0);
+      const check = () => {
+        if (this.state !== 'COUNTDOWN') {
           resolve();
+          return;
         }
-      }, 1000);
+
+        const t = this.player.getSongTime(); // Starts at -3.0s and increases to 0.0s
+
+        if (t < -2.0) {
+          if (lastBeep !== 3) {
+            lastBeep = 3;
+            if (this.onCountdownTick) this.onCountdownTick('3');
+            this.synth.playCountdownBeep(false);
+          }
+        } else if (t < -1.0) {
+          if (lastBeep !== 2) {
+            lastBeep = 2;
+            if (this.onCountdownTick) this.onCountdownTick('2');
+            this.synth.playCountdownBeep(false);
+          }
+        } else if (t < 0.0) {
+          if (lastBeep !== 1) {
+            lastBeep = 1;
+            if (this.onCountdownTick) this.onCountdownTick('1');
+            this.synth.playCountdownBeep(false);
+          }
+        } else {
+          // Reached beat 0 (Music downbeat starts!)
+          if (lastBeep !== 0) {
+            lastBeep = 0;
+            if (this.onCountdownTick) this.onCountdownTick('GO!');
+            this.synth.playCountdownBeep(true);
+            setTimeout(() => {
+              if (this.onCountdownTick) this.onCountdownTick('');
+            }, 600);
+          }
+          resolve();
+          return;
+        }
+
+        requestAnimationFrame(check);
+      };
+
+      requestAnimationFrame(check);
     });
   }
 
   pause() {
-    if (this.state !== 'PLAYING') return;
+    if (this.state !== 'PLAYING' && this.state !== 'COUNTDOWN') return;
     this.state = 'PAUSED';
     this.player.pause();
     if (this.onStateChange) this.onStateChange(this.state);
@@ -132,18 +154,15 @@ class GameEngine {
 
   resume() {
     if (this.state !== 'PAUSED') return;
-    this.state = 'PLAYING';
+    this.state = (this.player.getSongTime() < 0) ? 'COUNTDOWN' : 'PLAYING';
     this.player.resume();
     if (this.onStateChange) this.onStateChange(this.state);
   }
 
   stop() {
-    if (this.countdownTimer) {
-      clearInterval(this.countdownTimer);
-      this.countdownTimer = null;
-    }
     this.player.stop();
     this.state = 'IDLE';
+    if (this.onCountdownTick) this.onCountdownTick('');
     if (this.onStateChange) this.onStateChange(this.state);
   }
 
@@ -152,9 +171,11 @@ class GameEngine {
    * Frame rate drops will NOT cause missed judgements because we compare against audio time!
    */
   update() {
-    if (this.state !== 'PLAYING' || !this.chart) return;
+    if ((this.state !== 'PLAYING' && this.state !== 'COUNTDOWN') || !this.chart) return;
 
     const currentSongTime = this.player.getSongTime();
+    // Do not auto-miss notes before beat 0 has started
+    if (currentSongTime < 0) return;
 
     // Check for notes that passed beyond the Good/Miss window without being hit
     for (let i = 0; i < this.chart.notes.length; i++) {
@@ -163,8 +184,6 @@ class GameEngine {
 
       // If the note target time is in the future or within window, wait
       if (note.targetTime > currentSongTime - this.timingWindows.miss) {
-        // Since notes are sorted by time, future notes haven't missed yet
-        // However, simultaneous chords or close notes might appear, so we check carefully
         continue;
       }
 
@@ -182,9 +201,12 @@ class GameEngine {
    * Implements strict anti-double-hit logic by judging ONLY the single closest unhit note.
    */
   handleLaneInput(laneIndex) {
-    if (this.state !== 'PLAYING' || !this.chart) return;
+    if ((this.state !== 'PLAYING' && this.state !== 'COUNTDOWN') || !this.chart) return;
 
     const currentSongTime = this.player.getSongTime();
+    // Allow input slightly before beat 0 (e.g. -0.25s) so the very first note can be hit accurately
+    if (currentSongTime < -0.25) return;
+
     let closestNote = null;
     let minTimeDiff = Infinity;
 
@@ -195,13 +217,12 @@ class GameEngine {
 
       const diff = Math.abs(currentSongTime - note.targetTime);
 
-      // Only consider notes reasonably close to current time
       if (diff < minTimeDiff) {
         minTimeDiff = diff;
         closestNote = note;
       }
 
-      // Optimization: if note target time is far ahead in the future, break
+      // If note target time is far ahead in future, stop search
       if (note.targetTime > currentSongTime + this.timingWindows.miss + 0.2) {
         break;
       }
@@ -224,7 +245,7 @@ class GameEngine {
     } else if (absDiff <= this.timingWindows.miss) {
       judgement = 'MISS';
     } else {
-      // Tap was outside the active timing window. Ignore to avoid penalizing early anticipations.
+      // Tap was outside active window
       return;
     }
 
@@ -299,11 +320,6 @@ class GameEngine {
     if (this.onStateChange) this.onStateChange(this.state);
 
     // Calculate Grade:
-    // S: accuracy >= 95%
-    // A: accuracy >= 90%
-    // B: accuracy >= 80%
-    // C: accuracy >= 70%
-    // D: accuracy < 70%
     let grade = 'D';
     if (this.accuracy >= 95) grade = 'S';
     else if (this.accuracy >= 90) grade = 'A';
