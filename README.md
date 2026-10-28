@@ -2,6 +2,9 @@
 
 > A high-octane neon rhythm arcade game powered by multi-track procedural synthesis via the **Web Audio API**. Zero external audio files, zero CDN dependencies, 100% offline-ready, with beat-synchronized deterministic note charts.
 
+🎮 **PLAY LIVE ONLINE (GitHub Pages)**:  
+👉 **[https://prathampatel79.github.io/rhythm-reactor/](https://prathampatel79.github.io/rhythm-reactor/)**
+
 ---
 
 ## 🎮 How to Start the Game
