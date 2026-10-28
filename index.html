@@ -24,7 +24,7 @@
       <!-- In-Game HUD -->
       <header class="game-hud-top">
         <div class="hud-left">
-          <button id="btn-hud-pause" class="hud-btn" title="Pause Game (ESC / P)">⏸</button>
+          <button id="btn-hud-exit" class="hud-btn hud-exit-btn" title="Back to Song Selection">◀ EXIT</button>
           <div class="hud-track-info">
             <span id="hud-song-title" class="hud-title">Neon Pulse</span>
             <span id="hud-section" class="hud-badge section-badge">INTRO</span>
@@ -75,19 +75,6 @@
           <button class="mobile-touch-pad lane-1" data-lane="1">F</button>
           <button class="mobile-touch-pad lane-2" data-lane="2">J</button>
           <button class="mobile-touch-pad lane-3" data-lane="3">K</button>
-        </div>
-      </div>
-
-      <!-- In-Game Pause Modal -->
-      <div id="pause-modal" class="modal-backdrop">
-        <div class="modal-content pause-modal-box">
-          <h2 class="pause-title">GAME PAUSED</h2>
-          <p class="pause-desc">Music & Highway Synchronized</p>
-          <div class="pause-buttons">
-            <button id="btn-pause-resume" class="btn-primary btn-pulse">RESUME PLAY</button>
-            <button id="btn-pause-restart" class="btn-secondary">RESTART TRACK</button>
-            <button id="btn-pause-quit" class="btn-danger-outline">SONG SELECT</button>
-          </div>
         </div>
       </div>
     </section>

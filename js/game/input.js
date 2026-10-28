@@ -21,7 +21,7 @@ class InputController {
     // Callback hooks
     this.onLanePress = null;   // (laneIndex) => void
     this.onLaneRelease = null; // (laneIndex) => void
-    this.onPausePress = null;  // () => void
+    this.onExitPress = null;   // () => void
 
     this.isListening = false;
 
@@ -45,8 +45,8 @@ class InputController {
   }
 
   _handleKeyDown(e) {
-    if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
-      if (this.onPausePress) this.onPausePress();
+    if (e.key === 'Escape') {
+      if (this.onExitPress) this.onExitPress();
       return;
     }
 

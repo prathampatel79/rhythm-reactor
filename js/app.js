@@ -28,8 +28,7 @@ class App {
       accuracy: document.getElementById('hud-accuracy'),
       combo: document.getElementById('hud-combo'),
       multiplier: document.getElementById('hud-multiplier'),
-      countdown: document.getElementById('game-countdown-overlay'),
-      pauseModal: document.getElementById('pause-modal')
+      countdown: document.getElementById('game-countdown-overlay')
     };
 
     this.canvas = document.getElementById('highway-canvas');
@@ -107,11 +106,9 @@ class App {
       this.visualizer.setLaneHeld(lane, false);
     };
 
-    this.input.onPausePress = () => {
+    this.input.onExitPress = () => {
       if (this.engine.state === 'PLAYING' || this.engine.state === 'COUNTDOWN') {
-        this.pauseGame();
-      } else if (this.engine.state === 'PAUSED') {
-        this.resumeGame();
+        this.exitToSongSelect();
       }
     };
 
@@ -188,11 +185,11 @@ class App {
   }
 
   _bindHudHandlers() {
-    // In-game Pause button
-    const btnPause = document.getElementById('btn-hud-pause');
-    if (btnPause) {
-      btnPause.addEventListener('click', () => {
-        if (this.engine.state === 'PLAYING') this.pauseGame();
+    // In-game Exit button (Return to Song Selection)
+    const btnExit = document.getElementById('btn-hud-exit');
+    if (btnExit) {
+      btnExit.addEventListener('click', () => {
+        this.exitToSongSelect();
       });
     }
 
@@ -204,24 +201,6 @@ class App {
         btnHudMute.textContent = isMuted ? '🔇' : '🔊';
       });
     }
-
-    // Pause Modal Buttons
-    const btnResume = document.getElementById('btn-pause-resume');
-    const btnRestart = document.getElementById('btn-pause-restart');
-    const btnQuit = document.getElementById('btn-pause-quit');
-
-    if (btnResume) btnResume.addEventListener('click', () => this.resumeGame());
-    if (btnRestart) btnRestart.addEventListener('click', () => {
-      this.synth.playMenuClick();
-      this.hud.pauseModal.classList.remove('visible');
-      this.startSong(this.engine.song, this.engine.difficulty);
-    });
-    if (btnQuit) btnQuit.addEventListener('click', () => {
-      this.synth.playMenuClick();
-      this.hud.pauseModal.classList.remove('visible');
-      this.engine.stop();
-      this.showSongSelect();
-    });
   }
 
   _bindEngineCallbacks() {
@@ -292,19 +271,14 @@ class App {
     this.hud.bpm.textContent = `${song.bpm} BPM`;
     this.hud.section.textContent = 'INTRO';
     this.hud.progressFill.style.width = '0%';
-    this.hud.pauseModal.classList.remove('visible');
 
     await this.engine.startGame(song, difficulty);
   }
 
-  pauseGame() {
-    this.engine.pause();
-    this.hud.pauseModal.classList.add('visible');
-  }
-
-  resumeGame() {
-    this.hud.pauseModal.classList.remove('visible');
-    this.engine.resume();
+  exitToSongSelect() {
+    this.synth.playMenuClick();
+    this.engine.stop();
+    this.showSongSelect();
   }
 
   showResults(results) {

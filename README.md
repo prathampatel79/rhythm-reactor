@@ -61,7 +61,7 @@ Each track features:
 - **Lane 2 (Mid-Left - Magenta)**: `F`
 - **Lane 3 (Mid-Right - Gold)**: `J`
 - **Lane 4 (Right - Green)**: `K`
-- **Pause / Resume**: `Escape` or `P`
+- **Exit / Return to Song Selection**: `Escape` or the in-game `◀ EXIT` button
 - **Quick Mute / Unmute**: `M`
 
 ### Mobile & Touch Controls:

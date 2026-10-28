@@ -139,7 +139,7 @@ class HighwayVisualizer {
     this._drawHighwayLanes(ctx, highwayLeft, highwayWidth, laneWidth, h, hitLineY, beatPulse);
 
     // 3. Draw Falling Notes
-    if (this.engine.chart && (this.engine.state === 'PLAYING' || this.engine.state === 'COUNTDOWN' || this.engine.state === 'PAUSED')) {
+    if (this.engine.chart && (this.engine.state === 'PLAYING' || this.engine.state === 'COUNTDOWN')) {
       this._drawNotes(ctx, highwayLeft, laneWidth, hitLineY);
     }
 

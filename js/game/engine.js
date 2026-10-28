@@ -145,20 +145,6 @@ class GameEngine {
     });
   }
 
-  pause() {
-    if (this.state !== 'PLAYING' && this.state !== 'COUNTDOWN') return;
-    this.state = 'PAUSED';
-    this.player.pause();
-    if (this.onStateChange) this.onStateChange(this.state);
-  }
-
-  resume() {
-    if (this.state !== 'PAUSED') return;
-    this.state = (this.player.getSongTime() < 0) ? 'COUNTDOWN' : 'PLAYING';
-    this.player.resume();
-    if (this.onStateChange) this.onStateChange(this.state);
-  }
-
   stop() {
     this.player.stop();
     this.state = 'IDLE';
