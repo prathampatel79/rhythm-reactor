@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rhythm Reactor: Arcade Edition</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+  <!-- Audio Autoplay Banner (Dismisses on first click) -->
+  <div id="audio-unlock-banner" class="audio-banner">
+    <span>🎵 CLICK ANYWHERE TO INITIALIZE SYNTHESIZER AUDIO 🎵</span>
+  </div>
+
+  <div id="app-container">
+    <!-- SCREEN 1: SONG SELECTION LIBRARY -->
+    <section id="screen-song-select" class="screen active">
+      <!-- Injected by js/ui/song-select.js -->
+    </section>
+
+    <!-- SCREEN 2: GAMEPLAY HIGHWAY -->
+    <section id="screen-gameplay" class="screen">
+      <!-- In-Game HUD -->
+      <header class="game-hud-top">
+        <div class="hud-left">
+          <button id="btn-hud-pause" class="hud-btn" title="Pause Game (ESC / P)">⏸</button>
+          <div class="hud-track-info">
+            <span id="hud-song-title" class="hud-title">Neon Pulse</span>
+            <span id="hud-section" class="hud-badge section-badge">INTRO</span>
+            <span id="hud-bpm" class="hud-badge bpm-badge">110 BPM</span>
+          </div>
+        </div>
+
+        <div class="hud-center-progress">
+          <div class="progress-track">
+            <div id="hud-progress-fill" class="progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="hud-right">
+          <button id="btn-hud-mute" class="hud-btn" title="Mute/Unmute (M)">🔊</button>
+        </div>
+      </header>
+
+      <!-- Highway Canvas Viewport -->
+      <div class="highway-container">
+        <canvas id="highway-canvas"></canvas>
+
+        <!-- Dynamic In-Game Floating HUD Elements -->
+        <div class="game-stats-overlay">
+          <div class="stat-item">
+            <span class="stat-label">SCORE</span>
+            <span id="hud-score" class="stat-val">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">ACCURACY</span>
+            <span id="hud-accuracy" class="stat-val">100.0%</span>
+          </div>
+          <div class="stat-item combo-item">
+            <span class="stat-label">COMBO</span>
+            <div class="combo-row">
+              <span id="hud-combo" class="combo-num">0</span>
+              <span id="hud-multiplier" class="mult-badge">1x</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3-2-1 Countdown Overlay -->
+        <div id="game-countdown-overlay" class="countdown-overlay"></div>
+
+        <!-- Mobile On-Screen Touch Controls (Lanes D, F, J, K) -->
+        <div class="mobile-touch-bar">
+          <button class="mobile-touch-pad lane-0" data-lane="0">D</button>
+          <button class="mobile-touch-pad lane-1" data-lane="1">F</button>
+          <button class="mobile-touch-pad lane-2" data-lane="2">J</button>
+          <button class="mobile-touch-pad lane-3" data-lane="3">K</button>
+        </div>
+      </div>
+
+      <!-- In-Game Pause Modal -->
+      <div id="pause-modal" class="modal-backdrop">
+        <div class="modal-content pause-modal-box">
+          <h2 class="pause-title">GAME PAUSED</h2>
+          <p class="pause-desc">Music & Highway Synchronized</p>
+          <div class="pause-buttons">
+            <button id="btn-pause-resume" class="btn-primary btn-pulse">RESUME PLAY</button>
+            <button id="btn-pause-restart" class="btn-secondary">RESTART TRACK</button>
+            <button id="btn-pause-quit" class="btn-danger-outline">SONG SELECT</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: RESULTS SUMMARY -->
+    <section id="screen-results" class="screen">
+      <!-- Injected by js/ui/results.js -->
+    </section>
+
+    <!-- SETTINGS & LATENCY MODAL -->
+    <div id="settings-modal-container">
+      <!-- Injected by js/ui/settings.js -->
+    </div>
+  </div>
+
+  <!-- Audio Synthesis & Game Scripts -->
+  <script src="js/audio/synth-engine.js"></script>
+  <script src="js/audio/songs-data.js"></script>
+  <script src="js/audio/song-player.js"></script>
+  <script src="js/game/chart-builder.js"></script>
+  <script src="js/game/input.js"></script>
+  <script src="js/game/engine.js"></script>
+  <script src="js/game/visualizer.js"></script>
+  <script src="js/ui/song-select.js"></script>
+  <script src="js/ui/results.js"></script>
+  <script src="js/ui/settings.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

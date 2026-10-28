@@ -1,0 +1,20 @@
+{
+  "name": "rhythm-reactor",
+  "version": "1.0.0",
+  "description": "Rhythm Reactor: Arcade Edition - Multi-track procedural Web Audio rhythm game",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve -l 8080 .",
+    "serve": "python3 -m http.server 8080"
+  },
+  "keywords": [
+    "rhythm-game",
+    "web-audio-api",
+    "arcade",
+    "synthwave",
+    "chiptune",
+    "music-game"
+  ],
+  "author": "prathampatel79",
+  "license": "MIT"
+}
